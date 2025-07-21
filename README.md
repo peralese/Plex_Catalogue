@@ -9,11 +9,12 @@ This Python utility connects to your Plex server and exports your movie and TV s
 - 📁 One worksheet per **movie** library section (e.g., Movies, Classics)
 - 🎬 One combined **TV_Shows** worksheet with detailed episode breakdowns
 - 📊 A **Dashboard** tab summarizing movie stats and backup coverage
-- ✅ **Backup detection** using **Plex Collections**:
-  - Collections like `Backup`, `ISO`, `DVD`, `Blue-ray` are used to determine backup status
-- 🔄 **Fallback logic**: if no collections are found, it checks the file path for `.iso`, `.vob`, or `dvd` folder names
-- 📂 Output saved in a **timestamped folder** under `output/`
+- ✅ **Backup detection** using **Plex Labels** (not Collections):
+  - Labels like `Backup`, `ISO`, `DVD`, `Blue-ray`, `Ripped` are used to determine backup status
+- 🔄 **Fallback logic**: if no labels are found, it checks the file path for `.iso`, `.vob`, or `dvd` folder names
 - 📈 Totals row with **% Backed Up** on every sheet
+- 📉 Dashboard includes a **pie chart** summarizing backup type usage (DVD, Blue-ray, ISO, Ripped)
+- 📂 Output saved in a **timestamped folder** under `output/`
 - 📝 A **Wishlist** sheet for tracking missing content
 
 ---
@@ -37,13 +38,13 @@ This Python utility connects to your Plex server and exports your movie and TV s
 | Breaking Bad   | 2      | 3       | Bit by a Bee   | No     |      | /plex/tv/breakingbad/s02e03.mkv |
 | **Total**      |        |         |                | 1      |      |                              |
 
-### 📊 Dashboard
+### 📊 Dashboard (Updated)
 
-| Category   | Total Movies | With Backup | % Backed Up |
-|------------|---------------|--------------|--------------|
-| Movies     | 200           | 90           | 45.0         |
-| Classics   | 50            | 30           | 60.0         |
-| **Total**  | 250           | 120          | 48.0         |
+| Category | Movie Count | Backup Type (DVD, Blue-ray, ISO, Ripped) | % Backed Up |
+|----------|--------------|-------------------------------------------|--------------|
+| Movies   | 200          | 50 / 10 / 20 / 5                         | 42.5         |
+| Classics | 50           | 5 / 2 / 3 / 1                            | 22.0         |
+| **Total**| 250          | 55 / 12 / 23 / 6                         | 38.4         |
 
 ---
 
@@ -99,18 +100,19 @@ output/YYYY-MM-DD_HH-MM-SS/plex_media_catalog.xlsx
 
 - Python 3.7+
 - Access to your Plex server and a valid Plex Token
-- Optional: Use **Collections** in Plex (e.g., Backup, ISO, DVD) for richer reporting
+- Optional: Use **Labels** in Plex (e.g., Backup, ISO, DVD, Blue-ray, Ripped) for richer reporting
 
 ---
 
 ## 🧩 Future Enhancements
 
 - TV Dashboard summary
-- Allow Multiple collections to be combined (e.g., `ISO, DVD`)
+- Support multiple backup types on one item (e.g., `ISO, DVD`)
 - Include IMDb/TMDb ratings
-- Column auto-sizing and formatting
 - GUI or web-based launcher
-- Conditional formatting for backup status
+- Conditional formatting
+- Push output to Google Sheets
+- Bar chart summary on Dashboard
 
 ---
 
