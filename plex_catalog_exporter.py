@@ -5,10 +5,12 @@ from datetime import datetime
 import pandas as pd
 from dotenv import load_dotenv
 from openpyxl.styles import Font, Alignment
-from openpyxl.chart import PieChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.cell.cell import MergedCell 
 from plexapi.server import PlexServer
+from openpyxl.cell.cell import MergedCell           
+from openpyxl.chart import BarChart
+from openpyxl.chart.reference import Reference
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Environment
@@ -142,10 +144,10 @@ for cell in ws["1:2"]:
         c.font = Font(bold=True)
 autosize(ws)
 
-total_row = ws.max_row
+last_row = ws.max_row
 # ensure numeric + dummy values
 for col in range(3, 7):
-    cell = ws.cell(row=total_row, column=col)
+    cell = ws.cell(row=last_row, column=col)
     try: val = float(cell.value)
     except: val = 0
     if col == 4 and val == 0: val = 1          # Blue‑ray
@@ -154,13 +156,27 @@ for col in range(3, 7):
     cell.value = val
     cell.number_format = "0.00"
 
-pie = PieChart()
-pie.title = "Backup Type Distribution (Total)"
-pie.add_data(Reference(ws, min_col=3, max_col=6, min_row=total_row, max_row=total_row),
-             titles_from_data=False)
-pie.set_categories(Reference(ws, min_col=3, max_col=6, min_row=2))
-pie.dataLabels = DataLabelList(showVal=True, showPercent=True)
-ws.add_chart(pie, f"B{total_row + 2}")
+# Build bar chart
+bar = BarChart()
+bar.type  = "col"
+bar.style = 10
+bar.title = "Total Backup Type Counts"
+bar.y_axis.title = "Count"
+bar.x_axis.title = "Backup Type"
+
+data   = Reference(ws, min_col=3, max_col=6, min_row=last_row)
+labels = Reference(ws, min_col=3, max_col=6, min_row=2)   # DVD‑Ripped headers
+bar.add_data(data, titles_from_data=False, from_rows=True)
+bar.set_categories(labels)
+# bar.dataLabels = DataLabelList(showVal=True)
+bar.dataLabels = DataLabelList()
+bar.dataLabels.showVal = True
+bar.dataLabels.showCatName = True  # Set to True if you want DVD/ISO on bar label
+bar.dataLabels.showSerName = False
+bar.legend = None
+
+# place chart two rows below table
+ws.add_chart(bar, f"B{last_row + 2}")
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 6. Other sheets

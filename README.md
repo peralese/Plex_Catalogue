@@ -13,7 +13,7 @@ This Python utility connects to your Plex server and exports your movie and TV s
   - Labels like `Backup`, `ISO`, `DVD`, `Blue-ray`, `Ripped` are used to determine backup status
 - 🔄 **Fallback logic**: if no labels are found, it checks the file path for `.iso`, `.vob`, or `dvd` folder names
 - 📈 Totals row with **% Backed Up** on every sheet
-- 📉 Dashboard includes a **pie chart** summarizing backup type usage (DVD, Blue-ray, ISO, Ripped)
+- 📊 Dashboard includes a **bar chart** showing total counts per Backup Type (DVD, Blue-ray, ISO, Ripped)
 - 📂 Output saved in a **timestamped folder** under `output/`
 - 📝 A **Wishlist** sheet for tracking missing content
 
@@ -100,7 +100,7 @@ output/YYYY-MM-DD_HH-MM-SS/plex_media_catalog.xlsx
 
 - Python 3.7+
 - Access to your Plex server and a valid Plex Token
-- Optional: Use **Labels** in Plex (e.g., Backup, ISO, DVD, Blue-ray, Ripped) for richer reporting
+- Required: Use **Labels** in Plex (e.g., Backup, ISO, DVD, Blue-ray, Ripped) instead of Collections for tagging
 
 ---
 
@@ -112,7 +112,7 @@ output/YYYY-MM-DD_HH-MM-SS/plex_media_catalog.xlsx
 - GUI or web-based launcher
 - Conditional formatting
 - Push output to Google Sheets
-- Bar chart summary on Dashboard
+- Enhanced charting (e.g. color-coded bar chart)
 
 ---
 
@@ -126,3 +126,4 @@ You are free to use, modify, and distribute this tool with attribution.
 ## Author
 
 **Erick Perales** — IT Architect, Cloud Migration Specialist
+[https://github.com/peralese](https://github.com/peralese)
