@@ -195,5 +195,91 @@ pd.DataFrame(columns=["Title", "Notes", "Desired Format"]).to_excel(
     writer, sheet_name="Wishlist", index=False)
 autosize(writer.sheets["Wishlist"])
 
+# 🟡 Insert this new section at the bottom, just before writer.close()
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 7. TV Dashboard Summary
+# ──────────────────────────────────────────────────────────────────────────────
+from collections import defaultdict
+
+tv_summary = defaultdict(lambda: {"total": 0, "backed": 0})
+
+# build show stats
+for row in tv_rows:
+    show = row[0]
+    backed = row[4] == "Yes"
+    tv_summary[show]["total"] += 1
+    if backed:
+        tv_summary[show]["backed"] += 1
+
+# convert to DataFrame
+tv_dash_rows = []
+for show, stats in sorted(tv_summary.items()):
+    total = stats["total"]
+    backed = stats["backed"]
+    pct = round((backed / total) * 100, 1) if total else 0
+    tv_dash_rows.append([show, total, backed, pct])
+
+df_tv_dash = pd.DataFrame(tv_dash_rows, columns=[
+    "Show Title", "Total Episodes", "Backed Up", "% Backed Up"
+])
+
+# add totals row
+df_tv_dash.loc[len(df_tv_dash)] = [
+    "Total",
+    df_tv_dash["Total Episodes"].sum(),
+    df_tv_dash["Backed Up"].sum(),
+    round(df_tv_dash["Backed Up"].sum() / df_tv_dash["Total Episodes"].sum() * 100, 1)
+]
+
+df_tv_dash.to_excel(writer, sheet_name="TV_Dashboard", index=False)
+writer.book._sheets.sort(key=lambda s: 0 if s.title == "Dashboard" else (1 if s.title == "TV_Dashboard" else 2))
+ws_tv = writer.sheets["TV_Dashboard"]
+
+# Bold the header and total row
+for cell in ws_tv["1:1"]:
+    cell.font = Font(bold=True)
+last_tv_row = ws_tv.max_row
+for cell in ws_tv[last_tv_row]:
+    cell.font = Font(bold=True)
+
+autosize(ws_tv)
+
+from openpyxl.chart import PieChart, Reference
+from openpyxl.chart.label import DataLabelList
+
+# Get backed up and total episode count (excluding "Total" row already at bottom)
+total_eps = df_tv_dash["Total Episodes"].iloc[-1]
+backed_eps = df_tv_dash["Backed Up"].iloc[-1]
+not_backed_eps = total_eps - backed_eps
+
+# Write data temporarily to hidden cells for chart input
+ws_tv["J1"] = "Type"
+ws_tv["K1"] = "Count"
+ws_tv["J2"] = "Backed Up"
+ws_tv["K2"] = backed_eps
+ws_tv["J3"] = "Not Backed Up"
+ws_tv["K3"] = not_backed_eps
+
+# Create the pie chart
+pie = PieChart()
+pie.title = "Overall TV Backup Coverage"
+
+labels = Reference(ws_tv, min_col=10, max_col=10, min_row=2, max_row=3)  # Column J
+data = Reference(ws_tv, min_col=11, max_col=11, min_row=2, max_row=3)    # Column K, skipping header!
+
+pie.add_data(data, titles_from_data=False)  # Set to False to avoid "Count" label
+pie.set_categories(labels)
+
+pie.dataLabels = DataLabelList()
+pie.dataLabels.showPercent = False
+pie.dataLabels.showCatName = True
+pie.dataLabels.showVal = False   # Turn off raw count to reduce clutter
+
+
+# Insert chart a few rows below the table
+ws_tv.add_chart(pie, f"B{ws_tv.max_row + 3}")
+
+
 writer.close()
 print("✅ Excel saved:", excel_path)
