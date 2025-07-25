@@ -15,6 +15,10 @@ venv/
 output/
 *.xlsx
 
+# Google API credentials
+google_credentials.json
+*.json  # optional: ignores ALL JSON files (if no others need to be tracked)
+
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 

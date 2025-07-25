@@ -1,6 +1,6 @@
 # Plex Catalog Exporter
 
-This Python utility connects to your Plex server and exports your movie and TV show libraries into an organized Excel workbook. It includes a dashboard summary, individual sheets per movie library, a combined TV shows sheet, a TV dashboard, and a wishlist tab for tracking future acquisitions.
+This Python utility connects to your Plex server and exports your movie and TV show libraries into an organized Excel workbook. It includes a dashboard summary, individual sheets per movie library, a combined TV shows sheet, a TV dashboard, and a wishlist tab for tracking future acquisitions. It also supports Google Sheets integration for syncing your data online.
 
 ---
 
@@ -18,6 +18,9 @@ This Python utility connects to your Plex server and exports your movie and TV s
 - 📈 TV Dashboard includes a **pie chart** showing % of TV episodes backed up vs not backed up
 - 📂 Output saved in a **timestamped folder** under `output/`
 - 📝 A **Wishlist** sheet for tracking missing content
+- ☁️ **Google Sheets Sync**: Excel workbook is automatically synced to a specified Google Sheet
+- 🌐 (Planned) **Wishlist will live in Google Sheets** and be pulled in dynamically during export
+- 🧹 Optional: Cleanup logic can be enabled to delete the timestamped `output/` folder once syncing is successful
 
 ---
 
@@ -85,6 +88,11 @@ Create a `.env` file in the root of the project with the following:
 PLEX_BASEURL=http://localhost:32400
 PLEX_TOKEN=your_plex_token_here
 IGNORE_LIBRARIES=Music Videos
+
+# Google Sheets
+GOOGLE_SHEET_NAME=Plex Movies
+GOOGLE_CREDENTIALS_FILE=google_credentials.json
+
 ```
 
 > You can exclude specific Plex libraries by listing them under `IGNORE_LIBRARIES`, separated by commas.
@@ -111,6 +119,7 @@ output/YYYY-MM-DD_HH-MM-SS/plex_media_catalog.xlsx
 - Python 3.7+
 - Access to your Plex server and a valid Plex Token
 - Required: Use **Labels** in Plex (e.g., Backup, ISO, DVD, Blue-ray, Ripped) instead of Collections for tagging
+- Valid Google Service Account credentials with access to your destination Google Sheet
 
 ---
 
@@ -120,8 +129,9 @@ output/YYYY-MM-DD_HH-MM-SS/plex_media_catalog.xlsx
 - Include IMDb/TMDb ratings
 - GUI or web-based launcher
 - Conditional formatting
-- Push output to Google Sheets
-- Enhanced charting (e.g. color-coded bar chart)
+- Pull Wishlist dynamically from a dedicated Google Sheet
+- Web front-end to add Wishlist entries
+- Cleanup timestamped output folder at the end of project
 
 ---
 

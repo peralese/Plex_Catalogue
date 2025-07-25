@@ -11,6 +11,7 @@ from plexapi.server import PlexServer
 from openpyxl.cell.cell import MergedCell           
 from openpyxl.chart import BarChart
 from openpyxl.chart.reference import Reference
+from modules.google_sync import sync_excel_to_gsheet
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Environment
@@ -265,16 +266,20 @@ ws_tv["K3"] = not_backed_eps
 pie = PieChart()
 pie.title = "Overall TV Backup Coverage"
 
-labels = Reference(ws_tv, min_col=10, max_col=10, min_row=2, max_row=3)  # Column J
-data = Reference(ws_tv, min_col=11, max_col=11, min_row=2, max_row=3)    # Column K, skipping header!
+labels = Reference(ws_tv, min_col=10, max_col=10, min_row=2, max_row=3)
+data = Reference(ws_tv, min_col=11, max_col=11, min_row=2, max_row=3)
 
-pie.add_data(data, titles_from_data=False)  # Set to False to avoid "Count" label
+pie = PieChart()
+pie.title = "Overall TV Backup Coverage"
+pie.add_data(data, titles_from_data=False)
 pie.set_categories(labels)
+pie.series[0].name = ""  # ✅ Remove default "Series1" from pie chart label
 
 pie.dataLabels = DataLabelList()
 pie.dataLabels.showPercent = False
-pie.dataLabels.showCatName = True
-pie.dataLabels.showVal = False   # Turn off raw count to reduce clutter
+pie.dataLabels.showCatName = False
+pie.dataLabels.showVal = False
+pie.dataLabels.showSerName = False
 
 
 # Insert chart a few rows below the table
@@ -282,4 +287,5 @@ ws_tv.add_chart(pie, f"B{ws_tv.max_row + 3}")
 
 
 writer.close()
+sync_excel_to_gsheet(excel_path)
 print("✅ Excel saved:", excel_path)
