@@ -1,143 +1,102 @@
 # Plex Catalog Exporter
 
-This Python utility connects to your Plex server and exports your movie and TV show libraries into an organized Excel workbook. It includes a dashboard summary, individual sheets per movie library, a combined TV shows sheet, a TV dashboard, and a wishlist tab for tracking future acquisitions. It also supports Google Sheets integration for syncing your data online.
+This Python script exports your Plex movie and TV libraries into an organized Excel spreadsheet, including dashboards, backup tracking, and a wish list integration from Google Sheets.
 
 ---
 
 ## 📦 Features
 
-- 📁 One worksheet per **movie** library section (e.g., Movies, Classics)
-- 🎬 One combined **TV_Shows** worksheet with detailed episode breakdowns
-- 📊 A **Dashboard** tab summarizing movie stats and backup coverage
-- 📺 A **TV_Dashboard** tab summarizing per-show episode backup stats
-- ✅ **Backup detection** using **Plex Labels** (not Collections):
-  - Labels like `Backup`, `ISO`, `DVD`, `Blue-ray`, `Ripped` are used to determine backup status
-- 🔄 **Fallback logic**: if no labels are found, it checks the file path for `.iso`, `.vob`, or `dvd` folder names
-- 📈 Totals row with **% Backed Up** on every sheet
-- 📊 Dashboard includes a **bar chart** showing total counts per Backup Type (DVD, Blue-ray, ISO, Ripped)
-- 📈 TV Dashboard includes a **pie chart** showing % of TV episodes backed up vs not backed up
-- 📂 Output saved in a **timestamped folder** under `output/`
-- 📝 A **Wishlist** sheet for tracking missing content
-- ☁️ **Google Sheets Sync**: Excel workbook is automatically synced to a specified Google Sheet
-- 🌐 (Planned) **Wishlist will live in Google Sheets** and be pulled in dynamically during export
-- 🧹 Optional: Cleanup logic can be enabled to delete the timestamped `output/` folder once syncing is successful
+- 🔍 Exports **one Excel tab per movie library** (e.g., Movies, Classics, Anime)
+- 📺 Generates a **TV Shows summary** sheet and a **TV Dashboard** with charts
+- 📊 Creates a **Dashboard** tab summarizing movie backup stats by type
+- ☁️ **Automatically uploads the Excel workbook to Google Sheets**
+- 🌐 **Pulls a movie wishlist** from an external Google Sheet
+- 📁 Saves exports in timestamped folders (e.g., `output/catalog_2025-07-21_130022/`)
 
 ---
 
-## 📁 Example Excel Layout
+## 📂 Output Structure
 
-### 🎬 Movie Sheet (`Movies`, `Classics`, etc.)
+Each Excel export includes:
 
-| Title        | Backup | Type     | Path                        |
-|--------------|--------|----------|-----------------------------|
-| Casablanca   | Yes    | ISO      | /plex/movies/casablanca.iso |
-| Ronin        | Yes    | ISO, DVD | /plex/movies/ronin.iso      |
-| Inception    | No     |          | /plex/movies/inception.mkv  |
-| **Total**    | 2      |          |                             |
-
-### 📺 TV_Shows Sheet
-
-| Show Title     | Season | Episode | Episode Title | Backup | Type | Path                         |
-|----------------|--------|---------|----------------|--------|------|------------------------------|
-| The Office     | 1      | 1       | Pilot          | Yes    | ISO  | /plex/tv/office/s01e01.iso   |
-| Breaking Bad   | 2      | 3       | Bit by a Bee   | No     |      | /plex/tv/breakingbad/s02e03.mkv |
-| **Total**      |        |         |                | 1      |      |                              |
-
-### 📊 Dashboard
-
-| Category | Movie Count | Backup Type (DVD, Blue-ray, ISO, Ripped) | % Backed Up |
-|----------|--------------|-------------------------------------------|--------------|
-| Movies   | 200          | 50 / 10 / 20 / 5                         | 42.5         |
-| Classics | 50           | 5 / 2 / 3 / 1                            | 22.0         |
-| **Total**| 250          | 55 / 12 / 23 / 6                         | 38.4         |
-
-### 📺 TV_Dashboard
-
-| Show Title     | Total Episodes | Backed Up | % Backed Up |
-|----------------|----------------|-----------|--------------|
-| The Office     | 200            | 150       | 75.0         |
-| Breaking Bad   | 62             | 62        | 100.0        |
-| Stranger Things| 34             | 20        | 58.8         |
-| **Total**      | 296            | 232       | 78.4         |
+| Sheet Name       | Description                                  |
+|------------------|----------------------------------------------|
+| `Dashboard`      | Backup summary per movie library             |
+| `TV_Dashboard`   | TV shows backup coverage + chart             |
+| `Movies`, `Classics`, etc. | One tab per Plex movie library       |
+| `TV_Shows`       | Combined list of all TV shows                |
+| `Wishlist`       | Pulled live from external Google Sheet       |
 
 ---
 
-## 🚀 Setup & Usage
+## ✅ Requirements
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/plex-catalog-exporter.git
-cd plex-catalog-exporter
-
-### 2. Install Dependencies
-
-It’s recommended to use a virtual environment:
-
-```bash
-pip install -r requirements.txt
-```
-
-> Required packages: `plexapi`, `pandas`, `openpyxl`, `python-dotenv`
-
-### 3. Create a `.env` File
-
-Create a `.env` file in the root of the project with the following:
+- Python 3.9+
+- A Plex Media Server
+- A service account with access to the desired Google Sheets
+- `.env` file with the following:
 
 ```
 PLEX_BASEURL=http://localhost:32400
-PLEX_TOKEN=your_plex_token_here
+PLEX_TOKEN=your_token_here
 IGNORE_LIBRARIES=Music Videos
 
-# Google Sheets
+GOOGLE_CREDENTIALS_JSON=google_credentials.json
 GOOGLE_SHEET_NAME=Plex Movies
-GOOGLE_CREDENTIALS_FILE=google_credentials.json
-
+MOVIE_WISHLIST_SHEET=DVD Wish List
 ```
 
-> You can exclude specific Plex libraries by listing them under `IGNORE_LIBRARIES`, separated by commas.
+---
 
-To get your Plex token:  
-[📖 Plex Token Guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
+## ▶️ How to Use
 
-### 4. Run the Script
+1. Clone this repository
+2. Create your `.env` file
+3. Share both Plex Google Sheets (`Plex Movies`, `DVD Wish List`) with your service account email
+4. Run:
 
 ```bash
 python plex_catalog_exporter.py
 ```
 
-The output Excel file will be created in:
+---
 
-```
-output/YYYY-MM-DD_HH-MM-SS/plex_media_catalog.xlsx
-```
+## 🔄 Sync Behavior
+
+- Overwrites **each tab** in the Google Sheet matching the Excel sheets
+- Extra tabs (e.g., `Notes`) in your Google Sheet are left untouched
 
 ---
 
-## 🛠️ Requirements
+## 🧠 Backup Tags Logic
 
-- Python 3.7+
-- Access to your Plex server and a valid Plex Token
-- Required: Use **Labels** in Plex (e.g., Backup, ISO, DVD, Blue-ray, Ripped) instead of Collections for tagging
-- Valid Google Service Account credentials with access to your destination Google Sheet
+Backup types (e.g., DVD, ISO, Ripped, Blue-ray) are pulled from **Labels**, not Collections, in Plex.
 
----
+Supported tags:
+- `DVD`, `ISO`, `Blue-ray`, `Ripped`, `Backup`
 
-## 🧩 Future Enhancements
-
-- Support multiple backup types on one item (e.g., `ISO, DVD`)
-- Include IMDb/TMDb ratings
-- GUI or web-based launcher
-- Conditional formatting
-- Pull Wishlist dynamically from a dedicated Google Sheet
-- Web front-end to add Wishlist entries
-- Cleanup timestamped output folder at the end of project
+These labels can be added to each movie or episode in Plex, and the script will detect them to classify backups.
 
 ---
 
-## 📄 License
+## 📋 Roadmap
 
-MIT License © 2025 Erick Perales  
+- [x] Replace local Wishlist tab with live data from Google Sheets
+- [x] Automatically sync final Excel output to Google Sheets
+- [x] Show bar chart of movie backup types
+- [x] Add pie chart of TV episode backup coverage
+- [x] Add TV Dashboard tab
+- [ ] **Add front-end to edit the movie wishlist directly**
+- [ ] Add automatic cleanup step to remove timestamped folders (optional)
+- [ ] Add formatting for the wishlist sheet (freeze headers, auto-width)
+- [ ] Validate that movie types in wishlist are `Movie` before inserting
+
+---
+
+## 📜 License
+
+MIT License
+
 You are free to use, modify, and distribute this tool with attribution.
 
 ---

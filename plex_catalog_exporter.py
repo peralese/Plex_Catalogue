@@ -12,6 +12,7 @@ from openpyxl.cell.cell import MergedCell
 from openpyxl.chart import BarChart
 from openpyxl.chart.reference import Reference
 from modules.google_sync import sync_excel_to_gsheet
+from modules.movie_wishlist_sync import write_wishlist_to_excel
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 1. Environment
@@ -192,9 +193,13 @@ if tv_rows:
         writer, sheet_name="TV_Shows", index=False)
     autosize(writer.sheets["TV_Shows"])
 
-pd.DataFrame(columns=["Title", "Notes", "Desired Format"]).to_excel(
-    writer, sheet_name="Wishlist", index=False)
+# pd.DataFrame(columns=["Title", "Notes", "Desired Format"]).to_excel(
+#     writer, sheet_name="Wishlist", index=False)
+# autosize(writer.sheets["Wishlist"])
+
+write_wishlist_to_excel(writer)
 autosize(writer.sheets["Wishlist"])
+
 
 # 🟡 Insert this new section at the bottom, just before writer.close()
 
