@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Wishlist</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        input[type="text"] { width: 95%; padding: 4px; }
+    </style>
+</head>
+<body>
+    <h2>🎬 Movie Wishlist</h2>
+    <form id="add-form">
+        <input type="text" name="Title" placeholder="Title" required>
+        <input type="text" name="Type" placeholder="Type" required>
+        <input type="text" name="Release" placeholder="Release">
+        <input type="text" name="Notes" placeholder="Notes">
+        <button type="submit">Add</button>
+    </form>
+    <br>
+    <table>
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Release</th>
+                <th>Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="wishlist-body"></tbody>
+    </table>
+
+    <script>
+        async function loadWishlist() {
+            const res = await fetch('/wishlist');
+            const data = await res.json();
+            const tbody = document.getElementById('wishlist-body');
+            tbody.innerHTML = '';
+            data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input value="${item.Title || ''}" data-col="Title" data-index="${index}"></td>
+                    <td><input value="${item.Type || ''}" data-col="Type" data-index="${index}"></td>
+                    <td><input value="${item.Release || ''}" data-col="Release" data-index="${index}"></td>
+                    <td><input value="${item.Notes || ''}" data-col="Notes" data-index="${index}"></td>
+
+                    <td>
+                        <button onclick="updateItem(${index})">💾 Save</button>
+                        <button onclick="deleteItem(${index})">❌ Delete</button>
+                    </td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function addItem(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const body = Object.fromEntries(formData.entries());
+            await fetch('/wishlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            event.target.reset();
+            loadWishlist();
+        }
+
+        async function updateItem(index) {
+            const inputs = document.querySelectorAll(`[data-index="${index}"]`);
+            const updated = {};
+            inputs.forEach(input => updated[input.dataset.col] = input.value);
+            await fetch(`/wishlist/${index}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updated)
+            });
+            loadWishlist();
+        }
+
+        async function deleteItem(index) {
+            await fetch(`/wishlist/${index}`, { method: 'DELETE' });
+            loadWishlist();
+        }
+
+        document.getElementById('add-form').addEventListener('submit', addItem);
+        window.onload = loadWishlist;
+    </script>
+</body>
+</html>
+
