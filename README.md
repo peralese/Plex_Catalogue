@@ -47,6 +47,10 @@ GOOGLE_CREDENTIALS_JSON=google_credentials.json
 GOOGLE_SHEET_NAME=Plex Movies
 MOVIE_WISHLIST_SHEET=DVD Wish List
 ```
+Install dependencies using:
+
+```bash
+pip install -r requirements.txt
 
 ---
 
@@ -96,9 +100,7 @@ Add these labels to your Plex movies or episodes to track backup types. Multiple
 - [x] Add TV Dashboard tab
 - [x] Switch from Collections to Labels for backup tagging
 - [x] Add web UI for viewing/editing the wish list
-- [ ] Allow front-end to delete and re-order wish list items
-- [ ] Format the Wishlist tab (freeze headers, auto-width)
-- [ ] Auto-cleanup old timestamped folders after successful upload
+- [x] Auto-cleanup old timestamped folders after successful upload
 
 ---
 

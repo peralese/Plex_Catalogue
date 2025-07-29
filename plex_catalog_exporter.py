@@ -1,6 +1,7 @@
 
 import os
 from datetime import datetime
+import shutil
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -294,3 +295,20 @@ ws_tv.add_chart(pie, f"B{ws_tv.max_row + 3}")
 writer.close()
 sync_excel_to_gsheet(excel_path)
 print("✅ Excel saved:", excel_path)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 8. Cleanup old output folders
+# ──────────────────────────────────────────────────────────────────────────────
+
+def cleanup_old_output_folders(base_dir="output"):
+    all_folders = [f for f in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, f))]
+    timestamped = sorted(all_folders, reverse=True)  # newest first
+
+    for folder in timestamped[1:]:  # keep the most recent
+        path_to_delete = os.path.join(base_dir, folder)
+        shutil.rmtree(path_to_delete)
+        print(f"Deleted old output folder: {path_to_delete}")
+
+# Run cleanup after successful sync
+cleanup_old_output_folders("output")
+
