@@ -7,9 +7,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from openpyxl.styles import Font, Alignment
 from openpyxl.chart.label import DataLabelList
-from openpyxl.cell.cell import MergedCell 
+from openpyxl.cell.cell import MergedCell
 from plexapi.server import PlexServer
-from openpyxl.cell.cell import MergedCell           
 from openpyxl.chart import BarChart
 from openpyxl.chart.reference import Reference
 from modules.google_sync import sync_excel_to_gsheet
@@ -25,7 +24,7 @@ IGNORE_LIBRARIES = [
     lib.strip() for lib in os.getenv("IGNORE_LIBRARIES", "").split(",") if lib.strip()
 ]
 
-BACKUP_TAGS = ["dvd", "blue-ray", "iso", "ripped"]  # accepted label values
+BACKUP_TAGS = ["dvd", "blu-ray", "iso", "ripped"]  # accepted label values (canonical)
 
 if not BASEURL or not TOKEN:
     raise ValueError("PLEX_BASEURL and PLEX_TOKEN must be set in .env")
@@ -36,18 +35,29 @@ plex = PlexServer(BASEURL, TOKEN)
 # 2. Helpers
 # ──────────────────────────────────────────────────────────────────────────────
 def autosize(ws, pad=2, max_width=80):
+    """Autosize worksheet columns, skipping merged placeholder cells.
+
+    - Uses the first non-merged cell in a column to get its column letter.
+    - Computes width based on the longest stringified value in real cells.
+    """
     for col_cells in ws.columns:
-        # find first real cell (skip merged)
-        # first = next((c for c in col_cells if not c.merged), None)
-        # if first:
-        #     max_len = max(len(str(c.value)) for c in col_cells if c.value)
-        #     ws.column_dimensions[first.column_letter].width = min(max_len + pad, max_width)
-        for col_cells in ws.columns:
-        # skip merged placeholders
-            first = next((c for c in col_cells if not isinstance(c, MergedCell)), None)
-            if first:
-                max_len = max(len(str(c.value)) for c in col_cells if c.value)
-                ws.column_dimensions[first.column_letter].width = min(max_len + pad, max_width) 
+        # Filter out merged placeholder cells
+        real_cells = [c for c in col_cells if not isinstance(c, MergedCell)]
+        if not real_cells:
+            continue
+
+        first = real_cells[0]
+
+        max_len = 0
+        for c in real_cells:
+            v = c.value
+            if v is None:
+                continue
+            s = str(v)
+            if len(s) > max_len:
+                max_len = len(s)
+
+        ws.column_dimensions[first.column_letter].width = min(max_len + pad, max_width)
 
 def get_label_tags(item):
     """Return lowercase label list for Movie / Show / Episode."""
@@ -57,11 +67,24 @@ def get_label_tags(item):
         return []
 
 def detect_backup(tags, file_path):
-    found = {t for t in BACKUP_TAGS if t in tags}
+    # Normalize common Blu-ray spellings into canonical "blu-ray"
+    br_aliases = {"blu-ray", "blue-ray", "bluray"}
+
+    found = set()
+    # direct tag matches (canonical keys only)
+    for t in BACKUP_TAGS:
+        if t == "blu-ray":
+            if any(alias in tags for alias in br_aliases):
+                found.add("blu-ray")
+        elif t in tags:
+            found.add(t)
+
     # fallback by path
-    fp = file_path.lower()
-    if ".iso" in fp: found.add("iso")
-    if "dvd" in fp or ".vob" in fp: found.add("dvd")
+    fp = (file_path or "").lower()
+    if ".iso" in fp:
+        found.add("iso")
+    if "dvd" in fp or ".vob" in fp:
+        found.add("dvd")
     return found, bool(found)
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -101,7 +124,7 @@ for section in plex.library.sections():
         movie_sheets.append((section.title[:31], df))
 
         total = stats["total"]
-        dvd, br, iso, rip = stats["dvd"], stats["blue-ray"], stats["iso"], stats["ripped"]
+        dvd, br, iso, rip = stats["dvd"], stats["blu-ray"], stats["iso"], stats["ripped"]
         pct = round((dvd + br + iso + rip) / total * 100, 1) if total else 0
         dashboard.append([section.title, total, dvd, br, iso, rip, pct])
 
@@ -120,23 +143,23 @@ for section in plex.library.sections():
 # ──────────────────────────────────────────────────────────────────────────────
 # 5. Build Dashboard + pie chart
 # ──────────────────────────────────────────────────────────────────────────────
-cols = ["Category", "Movie Count", "DVD", "Blue-ray", "ISO", "Ripped", "% Backed Up"]
+cols = ["Category", "Movie Count", "DVD", "Blu-ray", "ISO", "Ripped", "% Backed Up"]
 df_dash = pd.DataFrame(dashboard, columns=cols)
 df_dash.loc[len(df_dash)] = [
     "Total", df_dash["Movie Count"].sum(),
-    df_dash["DVD"].sum(), df_dash["Blue-ray"].sum(),
+    df_dash["DVD"].sum(), df_dash["Blu-ray"].sum(),
     df_dash["ISO"].sum(), df_dash["Ripped"].sum(), 0
 ]
 df_dash.at[len(df_dash)-1, "% Backed Up"] = round(
     # (df_dash.at[len(df_dash)-1, "DVD":"Ripped"].sum())
-    df_dash.loc[len(df_dash)-1, ["DVD", "Blue-ray", "ISO", "Ripped"]].sum()
+    df_dash.loc[len(df_dash)-1, ["DVD", "Blu-ray", "ISO", "Ripped"]].sum()
     / df_dash.at[len(df_dash)-1, "Movie Count"] * 100, 1)
 
 df_dash.to_excel(writer, sheet_name="Dashboard", index=False, startrow=2, header=False)
 ws = writer.sheets["Dashboard"]
 
 hdr_top = ["Category", "Movie Count", "Backup Type", "", "", "", "% Backed Up"]
-hdr_mid = ["", "", "DVD", "Blue-ray", "ISO", "Ripped", ""]
+hdr_mid = ["", "", "DVD", "Blu-ray", "ISO", "Ripped", ""]
 for r, row in enumerate((hdr_top, hdr_mid), 1):
     for c, v in enumerate(row, 1):
         ws.cell(r, c, v)
@@ -236,7 +259,7 @@ df_tv_dash.loc[len(df_tv_dash)] = [
     "Total",
     df_tv_dash["Total Episodes"].sum(),
     df_tv_dash["Backed Up"].sum(),
-    round(df_tv_dash["Backed Up"].sum() / df_tv_dash["Total Episodes"].sum() * 100, 1)
+    round(df_tv_dash["Backed Up"].sum() / df_tv_dash["Total Episodes"].sum() * 100, 1) if df_tv_dash["Total Episodes"].sum() != 0 else 0
 ]
 
 df_tv_dash.to_excel(writer, sheet_name="TV_Dashboard", index=False)
@@ -256,8 +279,8 @@ from openpyxl.chart import PieChart, Reference
 from openpyxl.chart.label import DataLabelList
 
 # Get backed up and total episode count (excluding "Total" row already at bottom)
-total_eps = df_tv_dash["Total Episodes"].iloc[-1]
-backed_eps = df_tv_dash["Backed Up"].iloc[-1]
+total_eps = int(df_tv_dash["Total Episodes"].sum())
+backed_eps = int(df_tv_dash["Backed Up"].sum())
 not_backed_eps = total_eps - backed_eps
 
 # Write data temporarily to hidden cells for chart input
