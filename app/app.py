@@ -1,9 +1,10 @@
 from flask import Flask, request, jsonify, render_template
 from modules.movie_wishlist_sync import load_movie_wishlist, save_movie_wishlist
 import pandas as pd
+import os
 
 app = Flask(__name__)
-sheet_name = "DVD Wish List"
+sheet_name = os.getenv("MOVIE_WISHLIST_SHEET", "DVD Wish List")
 
 @app.route('/')
 def index():

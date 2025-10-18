@@ -111,10 +111,14 @@ for section in plex.library.sections():
 
         for m in section.all():
             tags = get_label_tags(m)
-            fp   = m.media[0].parts[0].file
+            try:
+                fp = m.media[0].parts[0].file
+            except Exception:
+                fp = ""
             found, backed = detect_backup(tags, fp)
             stats["total"] += 1
-            for t in found: stats[t] += 1
+            for t in found:
+                stats[t] += 1
             rows.append([m.title, "Yes" if backed else "No",
                          ", ".join(sorted(found)).upper(), fp])
 
@@ -133,7 +137,10 @@ for section in plex.library.sections():
             show_labels = get_label_tags(show)
             for ep in show.episodes():
                 tags = get_label_tags(ep) or show_labels
-                fp   = ep.media[0].parts[0].file
+                try:
+                    fp = ep.media[0].parts[0].file
+                except Exception:
+                    fp = ""
                 found, backed = detect_backup(tags, fp)
                 tv_rows.append([
                     show.title, ep.seasonNumber, ep.index, ep.title,
@@ -316,8 +323,9 @@ ws_tv.add_chart(pie, f"B{ws_tv.max_row + 3}")
 
 
 writer.close()
-sync_excel_to_gsheet(excel_path)
-print("✅ Excel saved:", excel_path)
+if os.getenv("SYNC_TO_GOOGLE", "true").strip().lower() in {"1", "true", "yes", "on"}:
+    sync_excel_to_gsheet(excel_path)
+print("Excel saved:", excel_path)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 8. Cleanup old output folders
