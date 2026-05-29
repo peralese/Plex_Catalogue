@@ -11,6 +11,9 @@ venv/
 # dotenv environment config
 .env
 
+# Local database
+catalogue.db
+
 # Output files and folders
 output/
 *.xlsx
