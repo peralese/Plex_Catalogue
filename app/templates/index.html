@@ -3,6 +3,10 @@
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+  .title-link { color: #dde1f0; }
+  .title-link:hover { color: var(--plex-orange); }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -90,7 +94,7 @@
       <tbody>
         {% for lib in stats.libs %}
         <tr>
-          <td><a href="/movies?library={{ lib.library | urlencode }}" class="text-decoration-none" style="color:var(--plex-orange)">{{ lib.library }}</a></td>
+          <td><a href="/movies?library={{ lib.library | urlencode }}" class="title-link text-decoration-none">{{ lib.library }}</a></td>
           <td class="text-end">{{ lib.total }}</td>
           <td class="text-end">{{ lib.backed }}</td>
           <td class="text-end">{{ lib.total - lib.backed }}</td>

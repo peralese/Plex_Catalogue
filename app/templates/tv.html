@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block title %}TV Shows — Plex Catalogue{% endblock %}
 
+{% block head %}
+<style>
+  .title-link { color: #dde1f0; }
+  .title-link:hover { color: var(--plex-orange); }
+</style>
+{% endblock %}
+
 {% block content %}
 <h4 class="mb-4 fw-semibold">
   <i class="bi bi-tv me-2" style="color:var(--plex-orange)"></i>TV Shows
@@ -25,8 +32,7 @@
         <tr>
           <td>
             <a href="/tv/{{ s.show_title | urlencode }}"
-               class="text-decoration-none fw-medium"
-               style="color:var(--plex-orange)">
+               class="title-link fw-medium text-decoration-none">
               {{ s.show_title }}
             </a>
           </td>
