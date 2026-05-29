@@ -10,24 +10,24 @@
 {% endblock %}
 
 {% block content %}
-<h4 class="mb-4 fw-semibold">
+<h4 class="mb-3 fw-semibold">
   <i class="bi bi-speedometer2 me-2" style="color:var(--plex-orange)"></i>Dashboard
 </h4>
 
 <!-- Stat cards -->
-<div class="row g-3 mb-4">
+<div class="row g-2 mb-3">
   <!-- Movies -->
   <div class="col-6 col-md-3">
-    <div class="card stat-card h-100 p-3">
+    <div class="card stat-card h-100 p-2">
       <div class="text-muted small mb-1"><i class="bi bi-film me-1"></i>Total Movies</div>
-      <div class="display-5 fw-bold">{{ stats.total_movies }}</div>
+      <div class="fs-2 fw-bold" style="color:var(--plex-orange)">{{ stats.total_movies }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card stat-card h-100 p-3">
+    <div class="card stat-card h-100 p-2">
       <div class="text-muted small mb-1"><i class="bi bi-hdd me-1"></i>Movies Backed Up</div>
-      <div class="display-5 fw-bold">{{ stats.backed_movies }}</div>
-      <div class="small text-muted mt-1">
+      <div class="fs-2 fw-bold" style="color:var(--plex-orange)">{{ stats.backed_movies }}</div>
+      <div class="small text-muted">
         {% if stats.total_movies %}
           {{ "%.1f"|format(stats.backed_movies / stats.total_movies * 100) }}% of library
         {% else %}—{% endif %}
@@ -36,29 +36,29 @@
   </div>
   <!-- TV -->
   <div class="col-6 col-md-3">
-    <div class="card stat-card h-100 p-3">
+    <div class="card stat-card h-100 p-2">
       <div class="text-muted small mb-1"><i class="bi bi-tv me-1"></i>Total Episodes</div>
-      <div class="display-5 fw-bold">{{ stats.total_eps }}</div>
+      <div class="fs-2 fw-bold" style="color:var(--plex-orange)">{{ stats.total_eps }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card stat-card h-100 p-3">
+    <div class="card stat-card h-100 p-2">
       <div class="text-muted small mb-1"><i class="bi bi-bookmark-star me-1"></i>Wishlist Items</div>
-      <div class="display-5 fw-bold">{{ stats.total_wishlist }}</div>
+      <div class="fs-2 fw-bold" style="color:var(--plex-orange)">{{ stats.total_wishlist }}</div>
     </div>
   </div>
 </div>
 
 <!-- Charts row -->
-<div class="row g-3 mb-4">
+<div class="row g-2 mb-3">
   <!-- Movies by library -->
   <div class="col-lg-7">
     <div class="card h-100">
       <div class="card-header py-2">
         <i class="bi bi-bar-chart-fill me-2" style="color:var(--plex-orange)"></i>Movies by Library
       </div>
-      <div class="card-body">
-        <canvas id="libChart" height="220"></canvas>
+      <div class="card-body py-2">
+        <canvas id="libChart" height="140"></canvas>
       </div>
     </div>
   </div>
@@ -68,15 +68,15 @@
       <div class="card-header py-2">
         <i class="bi bi-pie-chart-fill me-2" style="color:var(--plex-orange)"></i>Movie Backup Coverage
       </div>
-      <div class="card-body d-flex align-items-center justify-content-center">
-        <canvas id="pieChart" style="max-height:220px;max-width:220px;"></canvas>
+      <div class="card-body py-2 d-flex align-items-center justify-content-center">
+        <canvas id="pieChart" style="max-height:160px;max-width:160px;"></canvas>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Per-library table -->
-<div class="card mb-4">
+<div class="card mb-3">
   <div class="card-header py-2">
     <i class="bi bi-table me-2" style="color:var(--plex-orange)"></i>Library Breakdown
   </div>
