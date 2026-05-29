@@ -1,52 +1,115 @@
-from flask import Flask, request, jsonify, render_template
-from modules.movie_wishlist_sync import load_movie_wishlist, save_movie_wishlist
-import pandas as pd
-import os
+from flask import Flask, render_template, request, jsonify
+from dotenv import load_dotenv
+
+from app.db import (
+    init_db,
+    get_dashboard_stats,
+    get_movies,
+    get_movie_libraries,
+    get_tv_shows,
+    get_show_episodes,
+    get_wishlist,
+    add_wishlist_item,
+    update_wishlist_item,
+    delete_wishlist_item,
+)
+from app.plex_sync import run_sync, get_status
+
+load_dotenv()
 
 app = Flask(__name__)
-sheet_name = os.getenv("MOVIE_WISHLIST_SHEET", "DVD Wish List")
+init_db()
 
-@app.route('/')
+
+# ── Pages ─────────────────────────────────────────────────────────────────────
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    stats = get_dashboard_stats()
+    sync = get_status()
+    return render_template("index.html", stats=stats, sync=sync)
 
-@app.route('/wishlist', methods=['GET'])
-def get_wishlist():
-    df = load_movie_wishlist(sheet_name)
-    wishlist = df.fillna('').to_dict(orient='records')
-    return jsonify(wishlist)
 
-@app.route('/wishlist', methods=['POST'])
-def add_wishlist_item():
-    item = request.get_json()
-    df = load_movie_wishlist(sheet_name)
-    # df = df.append(item, ignore_index=True)
-    df = pd.concat([df, pd.DataFrame([item])], ignore_index=True)
-    save_movie_wishlist(sheet_name, df)
-    return jsonify({"message": "Item added"}), 201
+@app.route("/movies")
+def movies():
+    library = request.args.get("library", "")
+    backup  = request.args.get("backup", "")
+    search  = request.args.get("search", "")
+    rows      = get_movies(library=library, backup=backup, search=search)
+    libraries = get_movie_libraries()
+    return render_template(
+        "movies.html",
+        movies=rows,
+        libraries=libraries,
+        selected_library=library,
+        selected_backup=backup,
+        search=search,
+    )
 
-@app.route('/wishlist/<int:index>', methods=['PUT'])
-def update_wishlist_item(index):
-    item = request.get_json()
-    df = load_movie_wishlist(sheet_name)
-    if 0 <= index < len(df):
-        for key in item:
-            if key in df.columns:
-                df.at[index, key] = item[key]
-        save_movie_wishlist(sheet_name, df)
-        return jsonify({"message": "Item updated"}), 200
-    else:
-        return jsonify({"error": "Invalid index"}), 404
 
-@app.route('/wishlist/<int:index>', methods=['DELETE'])
-def delete_wishlist_item(index):
-    df = load_movie_wishlist(sheet_name)
-    if 0 <= index < len(df):
-        df = df.drop(index).reset_index(drop=True)
-        save_movie_wishlist(sheet_name, df)
-        return jsonify({"message": "Item deleted"}), 200
-    else:
-        return jsonify({"error": "Invalid index"}), 404
+@app.route("/tv")
+def tv():
+    shows = get_tv_shows()
+    return render_template("tv.html", shows=shows)
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+@app.route("/tv/<path:show_title>")
+def tv_show(show_title):
+    episodes = get_show_episodes(show_title)
+    return render_template("tv_show.html", show_title=show_title, episodes=episodes)
+
+
+@app.route("/wishlist")
+def wishlist():
+    return render_template("wishlist.html")
+
+
+# ── Wishlist API ──────────────────────────────────────────────────────────────
+
+@app.route("/api/wishlist", methods=["GET"])
+def api_get_wishlist():
+    return jsonify(get_wishlist())
+
+
+@app.route("/api/wishlist", methods=["POST"])
+def api_add_wishlist():
+    d = request.get_json()
+    add_wishlist_item(
+        d.get("title", ""),
+        d.get("type", ""),
+        d.get("release", ""),
+        d.get("notes", ""),
+    )
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/wishlist/<int:item_id>", methods=["PUT"])
+def api_update_wishlist(item_id):
+    d = request.get_json()
+    update_wishlist_item(
+        item_id,
+        d.get("title", ""),
+        d.get("type", ""),
+        d.get("release", ""),
+        d.get("notes", ""),
+    )
+    return jsonify({"ok": True})
+
+
+@app.route("/api/wishlist/<int:item_id>", methods=["DELETE"])
+def api_delete_wishlist(item_id):
+    delete_wishlist_item(item_id)
+    return jsonify({"ok": True})
+
+
+# ── Sync API ──────────────────────────────────────────────────────────────────
+
+@app.route("/api/sync", methods=["POST"])
+def api_sync():
+    started = run_sync()
+    return jsonify({"started": started, "status": get_status()})
+
+
+@app.route("/api/sync/status")
+def api_sync_status():
+    return jsonify(get_status())

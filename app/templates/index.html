@@ -1,88 +1,160 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Movie Wishlist</title>
-    <style>
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background-color: #f2f2f2; }
-        input[type="text"] { width: 95%; padding: 4px; }
-    </style>
-</head>
-<body>
-    <h2>🎬 Movie Wishlist</h2>
-    <form id="add-form">
-        <input type="text" name="Title" placeholder="Title" required>
-        <input type="text" name="Type" placeholder="Type" required>
-        <input type="text" name="Release" placeholder="Release">
-        <input type="text" name="Notes" placeholder="Notes">
-        <button type="submit">Add</button>
-    </form>
-    <br>
-    <table>
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Type</th>
-                <th>Release</th>
-                <th>Notes</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="wishlist-body"></tbody>
+{% extends "base.html" %}
+{% block title %}Dashboard — Plex Catalogue{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h4 class="mb-4 fw-semibold">
+  <i class="bi bi-speedometer2 me-2" style="color:var(--plex-orange)"></i>Dashboard
+</h4>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <!-- Movies -->
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100 p-3">
+      <div class="text-muted small mb-1"><i class="bi bi-film me-1"></i>Total Movies</div>
+      <div class="display-5 fw-bold">{{ stats.total_movies }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100 p-3">
+      <div class="text-muted small mb-1"><i class="bi bi-hdd me-1"></i>Movies Backed Up</div>
+      <div class="display-5 fw-bold">{{ stats.backed_movies }}</div>
+      <div class="small text-muted mt-1">
+        {% if stats.total_movies %}
+          {{ "%.1f"|format(stats.backed_movies / stats.total_movies * 100) }}% of library
+        {% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- TV -->
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100 p-3">
+      <div class="text-muted small mb-1"><i class="bi bi-tv me-1"></i>Total Episodes</div>
+      <div class="display-5 fw-bold">{{ stats.total_eps }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card stat-card h-100 p-3">
+      <div class="text-muted small mb-1"><i class="bi bi-bookmark-star me-1"></i>Wishlist Items</div>
+      <div class="display-5 fw-bold">{{ stats.total_wishlist }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts row -->
+<div class="row g-3 mb-4">
+  <!-- Movies by library -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <i class="bi bi-bar-chart-fill me-2" style="color:var(--plex-orange)"></i>Movies by Library
+      </div>
+      <div class="card-body">
+        <canvas id="libChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+  <!-- Overall backup pie -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header py-2">
+        <i class="bi bi-pie-chart-fill me-2" style="color:var(--plex-orange)"></i>Movie Backup Coverage
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <canvas id="pieChart" style="max-height:220px;max-width:220px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Per-library table -->
+<div class="card mb-4">
+  <div class="card-header py-2">
+    <i class="bi bi-table me-2" style="color:var(--plex-orange)"></i>Library Breakdown
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Library</th>
+          <th class="text-end">Total</th>
+          <th class="text-end">Backed Up</th>
+          <th class="text-end">Not Backed Up</th>
+          <th class="text-end">% Coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lib in stats.libs %}
+        <tr>
+          <td><a href="/movies?library={{ lib.library | urlencode }}" class="text-decoration-none" style="color:var(--plex-orange)">{{ lib.library }}</a></td>
+          <td class="text-end">{{ lib.total }}</td>
+          <td class="text-end">{{ lib.backed }}</td>
+          <td class="text-end">{{ lib.total - lib.backed }}</td>
+          <td class="text-end">
+            {% if lib.total %}
+              {{ "%.1f"|format(lib.backed / lib.total * 100) }}%
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No data yet — run a Plex sync.</td></tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
+</div>
+{% endblock %}
 
-    <script>
-        async function loadWishlist() {
-            const res = await fetch('/wishlist');
-            const data = await res.json();
-            const tbody = document.getElementById('wishlist-body');
-            tbody.innerHTML = '';
-            data.forEach((item, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><input value="${item.Title || ''}" data-col="Title" data-index="${index}"></td>
-                    <td><input value="${item.Type || ''}" data-col="Type" data-index="${index}"></td>
-                    <td><input value="${item.Release || ''}" data-col="Release" data-index="${index}"></td>
-                    <td><input value="${item.Notes || ''}" data-col="Notes" data-index="${index}"></td>
+{% block scripts %}
+<script>
+  const libLabels  = {{ stats.libs | map(attribute='library') | list | tojson }};
+  const libTotal   = {{ stats.libs | map(attribute='total')   | list | tojson }};
+  const libBacked  = {{ stats.libs | map(attribute='backed')  | list | tojson }};
+  const libMissing = libTotal.map((t, i) => t - libBacked[i]);
 
-                    <td>
-                        <button onclick="updateItem(${index})">💾 Save</button>
-                        <button onclick="deleteItem(${index})">❌ Delete</button>
-                    </td>`;
-                tbody.appendChild(row);
-            });
-        }
+  Chart.defaults.color = '#8a8fa8';
+  Chart.defaults.borderColor = '#2a2d38';
 
-        async function addItem(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const body = Object.fromEntries(formData.entries());
-            await fetch('/wishlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-            event.target.reset();
-            loadWishlist();
-        }
+  new Chart(document.getElementById('libChart'), {
+    type: 'bar',
+    data: {
+      labels: libLabels,
+      datasets: [
+        { label: 'Backed Up', data: libBacked,  backgroundColor: '#1e6e3e' },
+        { label: 'Missing',   data: libMissing, backgroundColor: '#4a1a1a' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#b0b6cc' } } },
+      scales: {
+        x: { stacked: true, grid: { color: '#2a2d38' } },
+        y: { stacked: true, grid: { color: '#2a2d38' }, beginAtZero: true }
+      }
+    }
+  });
 
-        async function updateItem(index) {
-            const inputs = document.querySelectorAll(`[data-index="${index}"]`);
-            const updated = {};
-            inputs.forEach(input => updated[input.dataset.col] = input.value);
-            await fetch(`/wishlist/${index}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updated)
-            });
-            loadWishlist();
-        }
-
-        async function deleteItem(index) {
-            await fetch(`/wishlist/${index}`, { method: 'DELETE' });
-            loadWishlist();
-        }
-
-        document.getElementById('add-form').addEventListener('submit', addItem);
-        window.onload = loadWishlist;
-    </script>
-</body>
-</html>
-
+  new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Backed Up', 'Not Backed Up'],
+      datasets: [{
+        data: [{{ stats.backed_movies }}, {{ stats.total_movies - stats.backed_movies }}],
+        backgroundColor: ['#1e6e3e', '#4a1a1a'],
+        borderColor: ['#7fffb8', '#ff9090'],
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#b0b6cc', padding: 16 } }
+      }
+    }
+  });
+</script>
+{% endblock %}

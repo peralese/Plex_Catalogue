@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ show_title }} — Plex Catalogue{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb" style="--bs-breadcrumb-divider-color:#555;">
+    <li class="breadcrumb-item"><a href="/tv" style="color:var(--plex-orange)">TV Shows</a></li>
+    <li class="breadcrumb-item active text-muted">{{ show_title }}</li>
+  </ol>
+</nav>
+
+<h4 class="mb-1 fw-semibold">
+  <i class="bi bi-tv me-2" style="color:var(--plex-orange)"></i>{{ show_title }}
+</h4>
+
+{% set backed = episodes | selectattr('backed_up') | list | length %}
+{% set total  = episodes | length %}
+<p class="text-muted small mb-4">
+  {{ total }} episodes &nbsp;·&nbsp;
+  {{ backed }} backed up &nbsp;·&nbsp;
+  {% if total %}{{ "%.1f"|format(backed / total * 100) }}%{% else %}—{% endif %} coverage
+</p>
+
+<!-- Group by season -->
+{% set seasons = episodes | map(attribute='season') | unique | list %}
+{% for season in seasons | sort %}
+  {% set eps = episodes | selectattr('season', 'equalto', season) | list %}
+  <div class="card mb-3">
+    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+      <span>
+        <i class="bi bi-collection me-2" style="color:var(--plex-orange)"></i>
+        Season {{ season }}
+      </span>
+      <span class="small text-muted">
+        {{ eps | selectattr('backed_up') | list | length }} / {{ eps | length }} backed up
+      </span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover table-striped mb-0">
+        <thead>
+          <tr>
+            <th style="width:60px">#</th>
+            <th>Episode</th>
+            <th class="text-center">Backed Up</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ep in eps | sort(attribute='episode_num') %}
+          <tr>
+            <td class="text-muted">{{ ep.episode_num }}</td>
+            <td>{{ ep.episode_title or '—' }}</td>
+            <td class="text-center">
+              {% if ep.backed_up %}
+                <span class="badge badge-backed">Yes</span>
+              {% else %}
+                <span class="badge badge-not">No</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if ep.backup_types %}
+                {% for t in ep.backup_types.split(', ') %}
+                  <span class="badge bg-secondary me-1">{{ t }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="text-center text-muted py-5">No episode data found.</div>
+{% endfor %}
+{% endblock %}

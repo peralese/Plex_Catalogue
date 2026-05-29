@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Movies — Plex Catalogue{% endblock %}
+
+{% block content %}
+<h4 class="mb-4 fw-semibold">
+  <i class="bi bi-film me-2" style="color:var(--plex-orange)"></i>Movies
+  <span class="fs-6 fw-normal text-muted ms-2">{{ movies | length }} titles</span>
+</h4>
+
+<!-- Filters -->
+<form method="get" class="row g-2 mb-4 align-items-end">
+  <div class="col-sm-4">
+    <label class="form-label small text-muted mb-1">Library</label>
+    <select name="library" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">All Libraries</option>
+      {% for lib in libraries %}
+        <option value="{{ lib }}" {% if lib == selected_library %}selected{% endif %}>{{ lib }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-sm-3">
+    <label class="form-label small text-muted mb-1">Backup Status</label>
+    <select name="backup" class="form-select form-select-sm" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="yes" {% if selected_backup == 'yes' %}selected{% endif %}>Backed Up</option>
+      <option value="no"  {% if selected_backup == 'no'  %}selected{% endif %}>Not Backed Up</option>
+    </select>
+  </div>
+  <div class="col-sm-4">
+    <label class="form-label small text-muted mb-1">Search</label>
+    <div class="input-group input-group-sm">
+      <input type="text" name="search" class="form-control" placeholder="Title…" value="{{ search }}">
+      <button class="btn btn-outline-secondary" type="submit">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </div>
+  {% if selected_library or selected_backup or search %}
+  <div class="col-sm-1 d-flex align-items-end">
+    <a href="/movies" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-x-lg"></i>
+    </a>
+  </div>
+  {% endif %}
+</form>
+
+<!-- Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0" id="movie-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Library</th>
+          <th class="text-center">Backed Up</th>
+          <th>Type</th>
+          <th class="text-muted small">File Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movies %}
+        <tr>
+          <td class="fw-medium">{{ m.title }}</td>
+          <td class="small text-muted">{{ m.library }}</td>
+          <td class="text-center">
+            {% if m.backed_up %}
+              <span class="badge badge-backed">Yes</span>
+            {% else %}
+              <span class="badge badge-not">No</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if m.backup_types %}
+              {% for t in m.backup_types.split(', ') %}
+                <span class="badge bg-secondary me-1">{{ t }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted text-truncate" style="max-width:320px;" title="{{ m.file_path }}">
+            {{ m.file_path or '—' }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted py-5">
+            {% if not movies and (selected_library or selected_backup or search) %}
+              No movies match your filters.
+            {% else %}
+              No data yet — run a Plex sync from the nav bar.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

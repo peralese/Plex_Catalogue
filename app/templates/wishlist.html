@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Wishlist — Plex Catalogue{% endblock %}
+
+{% block content %}
+<h4 class="mb-4 fw-semibold">
+  <i class="bi bi-bookmark-star me-2" style="color:var(--plex-orange)"></i>Wishlist
+</h4>
+
+<!-- Add form -->
+<div class="card mb-4">
+  <div class="card-header py-2">
+    <i class="bi bi-plus-circle me-2" style="color:var(--plex-orange)"></i>Add Item
+  </div>
+  <div class="card-body">
+    <form id="add-form" class="row g-2">
+      <div class="col-sm-4">
+        <input type="text" class="form-control form-control-sm" name="title" placeholder="Title *" required>
+      </div>
+      <div class="col-sm-2">
+        <input type="text" class="form-control form-control-sm" name="type" placeholder="Type (DVD, Blu-ray…)">
+      </div>
+      <div class="col-sm-2">
+        <input type="text" class="form-control form-control-sm" name="release" placeholder="Release year">
+      </div>
+      <div class="col-sm-3">
+        <input type="text" class="form-control form-control-sm" name="notes" placeholder="Notes">
+      </div>
+      <div class="col-sm-1">
+        <button type="submit" class="btn btn-sm w-100" style="background:var(--plex-orange);color:#000;font-weight:600;">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- List -->
+<div class="card">
+  <div class="card-header py-2 d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-list-ul me-2" style="color:var(--plex-orange)"></i>Items</span>
+    <span id="item-count" class="small text-muted"></span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Release</th>
+          <th>Notes</th>
+          <th style="width:110px" class="text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="wishlist-body">
+        <tr><td colspan="5" class="text-center text-muted py-4">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let _items = [];
+
+  async function loadWishlist() {
+    const res  = await fetch('/api/wishlist');
+    _items = await res.json();
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('wishlist-body');
+    document.getElementById('item-count').textContent = _items.length + ' items';
+
+    if (_items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No items yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = _items.map((item, i) => `
+      <tr id="row-${i}">
+        <td><input class="form-control form-control-sm" value="${esc(item.title)}"   data-col="title"   data-i="${i}"></td>
+        <td><input class="form-control form-control-sm" value="${esc(item.type)}"    data-col="type"    data-i="${i}"></td>
+        <td><input class="form-control form-control-sm" value="${esc(item.release)}" data-col="release" data-i="${i}" style="width:90px"></td>
+        <td><input class="form-control form-control-sm" value="${esc(item.notes)}"   data-col="notes"   data-i="${i}"></td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-outline-success me-1" title="Save" onclick="saveItem(${i}, ${item.id})">
+            <i class="bi bi-floppy"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteItem(${item.id})">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function esc(v) {
+    return String(v ?? '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+
+  function getRowData(rowIndex) {
+    const inputs = document.querySelectorAll(`[data-i="${rowIndex}"]`);
+    const d = {};
+    inputs.forEach(el => d[el.dataset.col] = el.value);
+    return d;
+  }
+
+  async function saveItem(rowIndex, id) {
+    const d = getRowData(rowIndex);
+    await fetch(`/api/wishlist/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(d),
+    });
+    loadWishlist();
+  }
+
+  async function deleteItem(id) {
+    if (!confirm('Remove this item from the wishlist?')) return;
+    await fetch(`/api/wishlist/${id}`, { method: 'DELETE' });
+    loadWishlist();
+  }
+
+  document.getElementById('add-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const body = Object.fromEntries(fd.entries());
+    await fetch('/api/wishlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    e.target.reset();
+    loadWishlist();
+  });
+
+  loadWishlist();
+</script>
+{% endblock %}

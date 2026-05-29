@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}TV Shows — Plex Catalogue{% endblock %}
+
+{% block content %}
+<h4 class="mb-4 fw-semibold">
+  <i class="bi bi-tv me-2" style="color:var(--plex-orange)"></i>TV Shows
+  <span class="fs-6 fw-normal text-muted ms-2">{{ shows | length }} shows</span>
+</h4>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Show Title</th>
+          <th>Library</th>
+          <th class="text-end">Episodes</th>
+          <th class="text-end">Backed Up</th>
+          <th class="text-end">Missing</th>
+          <th style="min-width:140px">Coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in shows %}
+        <tr>
+          <td>
+            <a href="/tv/{{ s.show_title | urlencode }}"
+               class="text-decoration-none fw-medium"
+               style="color:var(--plex-orange)">
+              {{ s.show_title }}
+            </a>
+          </td>
+          <td class="small text-muted">{{ s.library }}</td>
+          <td class="text-end">{{ s.total_eps }}</td>
+          <td class="text-end">{{ s.backed_eps | int }}</td>
+          <td class="text-end">{{ s.total_eps - s.backed_eps | int }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1" style="height:6px;background:#2a2d38;">
+                <div class="progress-bar"
+                     style="width:{{ s.pct }}%;background-color:{% if s.pct >= 80 %}#1e6e3e{% elif s.pct >= 40 %}var(--plex-orange){% else %}#7a1f1f{% endif %};">
+                </div>
+              </div>
+              <span class="small text-muted" style="min-width:36px;text-align:right;">{{ s.pct }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-5">
+            No data yet — run a Plex sync from the nav bar.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

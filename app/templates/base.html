@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Plex Catalogue{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --plex-orange: #e5a00d;
+      --bg-body:     #111318;
+      --bg-card:     #1c1f26;
+      --bg-nav:      #16181f;
+      --border:      #2a2d38;
+      --text-muted:  #8a8fa8;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: #dde1f0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      background-color: var(--bg-nav) !important;
+      border-bottom: 1px solid var(--border);
+    }
+    .navbar-brand {
+      color: var(--plex-orange) !important;
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+    .nav-link { color: #b0b6cc !important; }
+    .nav-link:hover,
+    .nav-link.active { color: #fff !important; }
+
+    /* ── Cards ── */
+    .card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .card-header {
+      background-color: transparent;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    /* ── Stat cards ── */
+    .stat-card .display-5 { color: var(--plex-orange); }
+
+    /* ── Tables ── */
+    .table {
+      color: #dde1f0;
+      --bs-table-bg: transparent;
+      --bs-table-striped-bg: rgba(255,255,255,.03);
+      --bs-table-hover-bg: rgba(229,160,13,.08);
+    }
+    .table thead th {
+      background-color: #1a1d25;
+      color: #8a8fa8;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .table td { border-color: var(--border); vertical-align: middle; }
+
+    /* ── Badges ── */
+    .badge-backed { background-color: #1e6e3e; color: #7fffb8; }
+    .badge-not    { background-color: #4a1a1a; color: #ff9090; }
+
+    /* ── Form controls ── */
+    .form-control, .form-select {
+      background-color: #1a1d25;
+      border-color: var(--border);
+      color: #dde1f0;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: #1a1d25;
+      border-color: var(--plex-orange);
+      color: #dde1f0;
+      box-shadow: 0 0 0 .2rem rgba(229,160,13,.2);
+    }
+    .form-control::placeholder { color: var(--text-muted); }
+
+    /* ── Sync button ── */
+    #sync-btn {
+      background-color: var(--plex-orange);
+      border-color: var(--plex-orange);
+      color: #000;
+      font-weight: 600;
+    }
+    #sync-btn:hover { filter: brightness(1.1); }
+    #sync-btn:disabled { opacity: .6; }
+
+    /* ── Progress bar ── */
+    .sync-bar { height: 3px; }
+
+    /* ── Pagination ── */
+    .page-link {
+      background-color: var(--bg-card);
+      border-color: var(--border);
+      color: #b0b6cc;
+    }
+    .page-link:hover { background-color: #2a2d38; color: #fff; }
+    .page-item.active .page-link {
+      background-color: var(--plex-orange);
+      border-color: var(--plex-orange);
+      color: #000;
+    }
+    .page-item.disabled .page-link { background-color: var(--bg-card); }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg sticky-top">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-collection-play-fill me-2"></i>Plex Catalogue
+    </a>
+    <button class="navbar-toggler border-secondary" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="/">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'movies' %}active{% endif %}" href="/movies">
+            <i class="bi bi-film me-1"></i>Movies
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint in ('tv', 'tv_show') %}active{% endif %}" href="/tv">
+            <i class="bi bi-tv me-1"></i>TV Shows
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'wishlist' %}active{% endif %}" href="/wishlist">
+            <i class="bi bi-bookmark-star me-1"></i>Wishlist
+          </a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center gap-3">
+        <span id="sync-status-text" class="small text-muted"></span>
+        <button id="sync-btn" class="btn btn-sm" onclick="triggerSync()">
+          <i class="bi bi-arrow-repeat me-1"></i>Sync Plex
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- thin progress bar shown during sync -->
+  <div id="sync-progress" class="progress sync-bar position-absolute w-100"
+       style="bottom:0;left:0;display:none!important;border-radius:0;">
+    <div class="progress-bar progress-bar-striped progress-bar-animated"
+         style="width:100%;background-color:var(--plex-orange);"></div>
+  </div>
+</nav>
+
+<div class="container-fluid px-4 py-4">
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  let _pollInterval = null;
+
+  async function triggerSync() {
+    const btn = document.getElementById('sync-btn');
+    btn.disabled = true;
+    document.getElementById('sync-status-text').textContent = 'Syncing…';
+    document.getElementById('sync-progress').style.setProperty('display','flex','important');
+
+    await fetch('/api/sync', { method: 'POST' });
+    _pollInterval = setInterval(pollSync, 2000);
+  }
+
+  async function pollSync() {
+    const res  = await fetch('/api/sync/status');
+    const data = await res.json();
+    if (!data.running) {
+      clearInterval(_pollInterval);
+      document.getElementById('sync-btn').disabled = false;
+      document.getElementById('sync-progress').style.setProperty('display','none','important');
+      if (data.error) {
+        document.getElementById('sync-status-text').textContent = 'Error: ' + data.error;
+      } else if (data.last_run) {
+        const d = new Date(data.last_run);
+        const counts = data.counts;
+        document.getElementById('sync-status-text').textContent =
+          `Synced ${counts.movies ?? 0} movies, ${counts.episodes ?? 0} episodes — ${d.toLocaleTimeString()}`;
+        setTimeout(() => location.reload(), 1000);
+      }
+    }
+  }
+
+  // Show last sync time on load
+  fetch('/api/sync/status').then(r => r.json()).then(data => {
+    if (data.running) {
+      document.getElementById('sync-btn').disabled = true;
+      document.getElementById('sync-status-text').textContent = 'Syncing…';
+      document.getElementById('sync-progress').style.setProperty('display','flex','important');
+      _pollInterval = setInterval(pollSync, 2000);
+    } else if (data.last_run) {
+      const d = new Date(data.last_run);
+      document.getElementById('sync-status-text').textContent =
+        'Last sync: ' + d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+    }
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
