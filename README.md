@@ -128,7 +128,7 @@ Add these labels to your Plex movies or episodes to track backup types. Multiple
 - [x] Switch from Collections to Labels for backup tagging
 - [x] Add web UI for viewing/editing the wish list
 - [x] Auto-cleanup old timestamped folders after successful upload
-- [ ] Export the wishlist to Google Sheets
+- [x] Export the wishlist to Google Sheets
 
 ---
 

@@ -17,7 +17,12 @@
         <input type="text" class="form-control form-control-sm" name="title" placeholder="Title *" required>
       </div>
       <div class="col-sm-2">
-        <input type="text" class="form-control form-control-sm" name="type" placeholder="Type (DVD, Blu-ray…)">
+        <select class="form-select form-select-sm" name="type">
+          <option value="">Category…</option>
+          {% for lib in libraries %}
+          <option value="{{ lib }}">{{ lib }}</option>
+          {% endfor %}
+        </select>
       </div>
       <div class="col-sm-2">
         <input type="text" class="form-control form-control-sm" name="release" placeholder="Release year">
@@ -38,7 +43,14 @@
 <div class="card">
   <div class="card-header py-2 d-flex justify-content-between align-items-center">
     <span><i class="bi bi-list-ul me-2" style="color:var(--plex-orange)"></i>Items</span>
-    <span id="item-count" class="small text-muted"></span>
+    <div class="d-flex align-items-center gap-3">
+      <span id="item-count" class="small text-muted"></span>
+      <button class="btn btn-sm" id="gsheet-btn" onclick="syncToSheets()"
+              style="background:var(--plex-orange);color:#000;font-weight:600;">
+        <i class="bi bi-cloud-upload me-1"></i>Push to Google Sheets
+      </button>
+      <span id="gsheet-status" class="small text-muted"></span>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover table-striped mb-0">
@@ -61,6 +73,7 @@
 
 {% block scripts %}
 <script>
+  const LIBRARIES = {{ libraries | tojson }};
   let _items = [];
 
   async function loadWishlist() {
@@ -81,7 +94,10 @@
     tbody.innerHTML = _items.map((item, i) => `
       <tr id="row-${i}">
         <td><input class="form-control form-control-sm" value="${esc(item.title)}"   data-col="title"   data-i="${i}"></td>
-        <td><input class="form-control form-control-sm" value="${esc(item.type)}"    data-col="type"    data-i="${i}"></td>
+        <td><select class="form-select form-select-sm" data-col="type" data-i="${i}">
+              <option value="">—</option>
+              ${LIBRARIES.map(l => `<option value="${esc(l)}" ${item.type === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+            </select></td>
         <td><input class="form-control form-control-sm" value="${esc(item.release)}" data-col="release" data-i="${i}" style="width:90px"></td>
         <td><input class="form-control form-control-sm" value="${esc(item.notes)}"   data-col="notes"   data-i="${i}"></td>
         <td class="text-center">
@@ -135,6 +151,25 @@
     e.target.reset();
     loadWishlist();
   });
+
+  async function syncToSheets() {
+    const btn    = document.getElementById('gsheet-btn');
+    const status = document.getElementById('gsheet-status');
+    btn.disabled = true;
+    status.textContent = 'Syncing…';
+    try {
+      const res  = await fetch('/api/wishlist/sync', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        status.textContent = `Synced ${data.synced} items ✓`;
+      } else {
+        status.textContent = 'Error: ' + data.error;
+      }
+    } catch (e) {
+      status.textContent = 'Request failed';
+    }
+    btn.disabled = false;
+  }
 
   loadWishlist();
 </script>

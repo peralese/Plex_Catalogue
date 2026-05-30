@@ -14,6 +14,7 @@ from app.db import (
     delete_wishlist_item,
 )
 from app.plex_sync import run_sync, get_status
+from modules.google_sync import sync_wishlist_to_gsheet
 
 load_dotenv()
 
@@ -61,7 +62,8 @@ def tv_show(show_title):
 
 @app.route("/wishlist")
 def wishlist():
-    return render_template("wishlist.html")
+    libraries = get_movie_libraries() + ["TV Shows"]
+    return render_template("wishlist.html", libraries=libraries)
 
 
 # ── Wishlist API ──────────────────────────────────────────────────────────────
@@ -100,6 +102,16 @@ def api_update_wishlist(item_id):
 def api_delete_wishlist(item_id):
     delete_wishlist_item(item_id)
     return jsonify({"ok": True})
+
+
+@app.route("/api/wishlist/sync", methods=["POST"])
+def api_wishlist_sync():
+    try:
+        items = get_wishlist()
+        count = sync_wishlist_to_gsheet(items)
+        return jsonify({"ok": True, "synced": count})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # ── Sync API ──────────────────────────────────────────────────────────────────
